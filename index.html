@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>𝗥𝗮𝗻𝗱𝗼𝗺 𝘄𝗼𝗿𝗱𝘀</title>
+
+<style>
+:root{
+  --bg:#050816;
+  --card:#0b1224;
+  --line:#1e293b;
+  --text:#e6edf3;
+  --muted:#94a3b8;
+  --accent:#22c55e;
+  --accent2:#3b82f6;
+}
+
+*{box-sizing:border-box}
+
+body{
+  margin:0;
+  font-family:Inter,system-ui;
+  background:radial-gradient(circle at top,#0b1022,#050816);
+  color:var(--text);
+}
+
+.topbar{
+  display:flex;
+  align-items:center;
+  padding:14px 20px;
+  border-bottom:1px solid var(--line);
+  backdrop-filter: blur(10px);
+}
+
+.marquee{
+  font-size:11px;
+  color:var(--muted);
+  overflow:hidden;
+  height:18px;
+  flex:1;
+  margin-left:20px;
+}
+.marquee span{
+  display:inline-block;
+  padding-left:100%;
+  white-space: nowrap;
+  animation:scroll 20s linear infinite;
+}
+@keyframes scroll{
+  0%{transform:translateX(0)}
+  100%{transform:translateX(-100%)}
+}
+
+.wrap{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:20px;
+  padding:20px;
+  height:calc(100vh - 60px);
+}
+
+.card{
+  background:var(--card);
+  border:1px solid var(--line);
+  border-radius:14px;
+  padding:18px;
+  display:flex;
+  flex-direction:column;
+}
+
+textarea,select{
+  width:100%;
+  padding:12px;
+  margin-top:10px;
+  border-radius:10px;
+  border:1px solid var(--line);
+  background:#020617;
+  color:var(--text);
+}
+
+button{
+  margin-top:12px;
+  padding:13px;
+  border-radius:10px;
+  border:none;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  color:white;
+  cursor:pointer;
+}
+
+.copy{
+  background:linear-gradient(135deg,#06b6d4,#22c55e);
+}
+
+.result{
+  flex:1;
+  margin-top:10px;
+  font-size:18px;
+  line-height:1.6;
+  white-space:pre-wrap;
+  color:#f1f5f9;
+}
+
+label{
+  font-size:13px;
+  color:var(--muted);
+  margin-top:10px;
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div>🖧 𝐖𝐎𝐑𝐃 𝐒𝐘𝐒𝐓𝐄𝐌</div>
+  <div class="marquee">
+    <span>🚨 𝐒𝐄𝐌𝐎𝐆𝐀 𝐃𝐀𝐏𝐀𝐓 𝐌𝐄𝐌𝐁𝐀𝐍𝐓𝐔 𝐏𝐄𝐊𝐄𝐑𝐉𝐀𝐀𝐍 𝐀𝐍𝐃𝐀</span>
+  </div>
+</div>
+
+<div class="wrap">
+
+<!-- LEFT -->
+<div class="card">
+<label>📊 𝗨𝗻𝘁𝘂𝗸 𝗦𝘁𝗮𝘁𝘂𝘀</label>
+<select id="mode">
+<option value="premium">Premium</option>
+<option value="click">Click Focus</option>
+<option value="mind">Mind Game</option>
+<option value="personal">Personal</option>
+</select>
+
+<label>𝗟𝗶𝗻𝗸 ( 𝟭 𝘁𝗮𝘂𝘁𝗮𝗻 𝗽𝗲𝗿 𝗯𝗮𝗿𝗶𝘀 𝗮𝗸𝗮𝗻 𝗱𝗶𝗵𝗮𝗽𝘂𝘀 𝘀𝗲𝗰𝗮𝗿𝗮 𝗼𝘁𝗼𝗺𝗮𝘁𝗶𝘀 )</label>
+<textarea id="links"></textarea>
+
+<button onclick="generate()">Generate</button>
+</div>
+
+<!-- RIGHT -->
+<div class="card">
+<label>💬 𝗛𝗮𝘀𝗶𝗹 𝗱𝗮𝗿𝗶 𝗴𝗲𝗻𝗲𝗿𝗮𝘁𝗲 𝘀𝘁𝗮𝘁𝘂𝘀</label>
+<div id="output" class="result"></div>
+<button class="copy" onclick="copyText()">Copy</button>
+</div>
+
+<!-- 🔥 SIMPLE MESSAGE -->
+<div class="card">
+<label>💌 𝗨𝗻𝘁𝘂𝗸 𝗣𝗲𝘀𝗮𝗻</label>
+
+<label>𝗟𝗶𝗻𝗸 ( 𝟭 𝘁𝗮𝘂𝘁𝗮𝗻 𝗽𝗲𝗿 𝗯𝗮𝗿𝗶𝘀 𝗮𝗸𝗮𝗻 𝗱𝗶𝗵𝗮𝗽𝘂𝘀 𝘀𝗲𝗰𝗮𝗿𝗮 𝗼𝘁𝗼𝗺𝗮𝘁𝗶𝘀 )</label>
+<textarea id="msgLinks"></textarea>
+
+<button onclick="generateMsg()">Generate Message</button>
+
+<div id="msgOutput" class="result"></div>
+
+<button class="copy" onclick="copyMsg()">Copy Message</button>
+</div>
+
+</div>
+
+<script>
+
+let linkList=[];
+let msgLinkList=[];
+
+/* 🔥 HUGE WORD SYSTEM */
+
+const openers=[
+"I almost didn’t share this","I hesitated before posting this","I almost kept this private",
+"I wasn’t planning to show this","I paused before putting this up",
+"I didn’t expect to post this","I almost deleted this","I changed my mind last second",
+"I wasn’t sure about this","I wasn’t ready to post this","I almost skipped this",
+"I kept thinking about this","I didn’t plan to share this today",
+"I almost ignored this","I wasn’t going to say anything",
+"I wasn’t sure this mattered","I didn’t think I’d post this",
+"I almost backed out","I kept this to myself for a bit",
+"I didn’t expect this to turn out like this","I wasn’t planning to show this side",
+"I almost left this unseen","I didn’t think this would be worth sharing"
+];
+
+const intrigue=[
+"but something feels different","and now I can’t ignore it",
+"and now I’m curious what you’ll think","and I decided to share it anyway",
+"and now it feels worth it","and now I want to see reactions",
+"and now it’s on my mind","and now it feels more real",
+"and now I’m paying attention to it","and now I’m thinking about it more",
+"and now I couldn’t keep it to myself","and now I’m watching closely",
+"and now it feels right","and now it’s hard to ignore",
+"and now I’m wondering about it","and now it’s stuck in my head",
+"and now it feels different than before","and now I notice it more"
+];
+
+const curiosity=[
+"you might find this interesting","this might catch your attention",
+"this isn’t what you expect","you’ll understand when you see it",
+"this might surprise you","there’s more here than it looks",
+"this might be your kind of thing","this could be worth a look",
+"this might stay on your mind","this might pull you in",
+"I think this will stand out","this might feel different",
+"this might be worth your time","this might change your view",
+"this feels slightly unexpected","this might grab your attention",
+"you might notice something here","this could interest you"
+];
+
+const personal=[
+"this made me think of you","I feel like this matches your vibe",
+"something tells me you’ll like this","I think you’ll connect with this",
+"I don’t think this is for everyone… but maybe you",
+"I feel like you’ll notice this differently",
+"I think this fits your taste","this feels like your type of thing",
+"I feel like this speaks to you","I think this aligns with you",
+"I feel like you’d understand this quickly",
+"I think this was meant for someone like you",
+"I feel like this stands out to you"
+];
+
+const urgency=[
+"it might not stay here long","I might remove this later",
+"not sure how long I’ll leave this up",
+"this won’t be here forever","just leaving this here for now",
+"this might disappear soon","this isn’t staying up forever",
+"I might take this down later","this could be temporary",
+"this might not last here","not planning to keep this up long",
+"this might be gone soon","only here for a short time"
+];
+
+const emojis=[
+"👀","😏","✨","🔥","💭","🤭","💫","🖤","⚡","💎","😉","🌙","📍","📌",
+"🫣","🌟","🪄","🎯","🧠","🔍","💡","🧩","📲","🌌","🧲","🎭","📸","🔗",
+"💬","📝","🎬","📱","🪞","🌀","🧿","🧭","📎","📢","🌠","🪐","📖","🎧"
+];
+
+function build(mode){
+let o=openers[Math.floor(Math.random()*openers.length)];
+let i=intrigue[Math.floor(Math.random()*intrigue.length)];
+let c=curiosity[Math.floor(Math.random()*curiosity.length)];
+let p=personal[Math.floor(Math.random()*personal.length)];
+let u=urgency[Math.floor(Math.random()*urgency.length)];
+let e=emojis[Math.floor(Math.random()*emojis.length)];
+
+let patterns=[
+o+"… "+i+". "+c,
+c+"… "+u,
+p+"… "+c,
+o+"… "+i+". "+p,
+c+". "+p
+];
+
+let text=patterns[Math.floor(Math.random()*patterns.length)];
+
+if(mode==="click") text=c+"… "+u;
+if(mode==="mind") text="You’re already thinking about it… "+c;
+if(mode==="personal") text=p+"… "+i;
+
+return text+" "+e;
+}
+
+function generate(){
+let raw=document.getElementById("links").value.trim();
+let mode=document.getElementById("mode").value;
+
+if(raw==="") return;
+
+if(linkList.length===0){
+linkList=raw.split("\n").filter(x=>x.trim()!=="");
+}
+
+if(linkList.length===0){
+document.getElementById("output").innerText="No links left!";
+return;
+}
+
+let text=build(mode);
+let link=linkList.shift();
+
+document.getElementById("output").innerText=text+"\n"+link;
+document.getElementById("links").value=linkList.join("\n");
+}
+
+function copyText(){
+navigator.clipboard.writeText(document.getElementById("output").innerText);
+}
+
+/* SIMPLE MESSAGE (UPGRADE - CLICK FOCUSED 🔥) */
+
+const msg1=[
+"Hey…","Hi…","Hmm…","Hey you…","Wait…","Hold on…","Quick one…",
+"I wasn’t going to message you but…","I saw your profile and…",
+"This might sound random but…","Okay this is a bit unexpected…",
+"I almost didn’t send this…","Don’t ignore this…","Just a second…",
+"Before you scroll…","Can I show you something?","Look at this…"
+];
+
+const msg2=[
+"you seem interesting","I like your vibe","you caught my attention",
+"you look different","something about you stands out",
+"I feel like you’d like this","you might enjoy this",
+"this feels like your kind of thing","I think this matches you",
+"I think you’ll be into this","this reminds me of your vibe",
+"this feels perfect for you","I think this is your type"
+];
+
+const msg3=[
+"I wanted to show you something","I found something you might like",
+"I think you should see this","this is worth your attention",
+"you should check this out","this might surprise you",
+"I think you’ll enjoy this","this is kinda interesting",
+"this might catch your eye","this is not what you expect",
+"I think you’ll stay on this","this might pull you in",
+"this is a bit addictive","this is hard to ignore"
+];
+
+const msg4=[
+"just tap this link","check it here","open this",
+"take a look here","see it yourself",
+"don’t overthink just click","click and tell me later",
+"you’ll understand once you open it",
+"just one click","trust me just tap",
+"don’t miss this","before it disappears check this",
+"quick look here","this is the link"
+];
+
+const msgE=[
+"😏","😉","👀","🔥","💋","✨","⚡","🖤","🤭","💫","🫣","📲","💬","🔗"
+];
+
+/* GENERATE SIMPLE MESSAGE */
+function generateMsg(){
+
+let raw=document.getElementById("msgLinks").value.trim();
+
+if(raw===""){
+document.getElementById("msgOutput").innerText="𝗜𝘀𝗶 𝘁𝗲𝗿𝗹𝗲𝗯𝗶𝗵 𝗱𝗮𝗵𝘂𝗹𝘂 𝗹𝗶𝗻𝗸 𝗻𝘆𝗮 !";
+return;
+}
+
+if(msgLinkList.length===0){
+msgLinkList=raw.split("\n").filter(x=>x.trim()!=="");
+}
+
+if(msgLinkList.length===0){
+document.getElementById("msgOutput").innerText="No links left!";
+return;
+}
+
+let text=
+msg1[Math.floor(Math.random()*msg1.length)]+" "+
+msg2[Math.floor(Math.random()*msg2.length)]+"… "+
+msg3[Math.floor(Math.random()*msg3.length)]+". "+
+msg4[Math.floor(Math.random()*msg4.length)]+" "+
+msgE[Math.floor(Math.random()*msgE.length)];
+
+let link=msgLinkList.shift();
+
+document.getElementById("msgOutput").innerText=text+"\n"+link;
+document.getElementById("msgLinks").value=msgLinkList.join("\n");
+}
+
+function copyMsg(){
+navigator.clipboard.writeText(document.getElementById("msgOutput").innerText);
+}
+
+</script>
+
+</body>
+</html>
