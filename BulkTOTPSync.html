@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Bulk TOTP Generator</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#050508;--surface:#0d0f17;--surface2:#12151f;--surface3:#171b28;
+  --border:rgba(255,255,255,.06);--border2:rgba(255,255,255,.1);
+  --green:#00ff87;--green2:#00e676;--green-dim:rgba(0,255,135,.08);
+  --green-glow:0 0 30px rgba(0,255,135,.25);
+  --cyan:#00d4ff;--purple:#7c3aed;--red:#ff4560;--red-dim:rgba(255,69,96,.1);
+  --text:#e8eaf6;--muted:#4a5568;--muted2:#718096;
+}
+body{
+  font-family:'Space Grotesk',sans-serif;background:var(--bg);color:var(--text);
+  min-height:100vh;display:flex;align-items:flex-start;justify-content:center;
+  padding:24px 16px 60px;overflow-x:hidden;
+}
+body::before{
+  content:'';position:fixed;inset:0;z-index:0;
+  background:
+    radial-gradient(ellipse 60% 40% at 20% 10%,rgba(0,255,135,.05),transparent),
+    radial-gradient(ellipse 50% 50% at 80% 80%,rgba(0,212,255,.04),transparent),
+    radial-gradient(ellipse 40% 30% at 60% 40%,rgba(124,58,237,.04),transparent);
+  animation:bgShift 8s ease-in-out infinite alternate;pointer-events:none;
+}
+@keyframes bgShift{0%{opacity:.6}100%{opacity:1}}
+body::after{
+  content:'';position:fixed;inset:0;z-index:0;
+  background-image:linear-gradient(rgba(255,255,255,.015) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(255,255,255,.015) 1px,transparent 1px);
+  background-size:40px 40px;pointer-events:none;
+}
+.wrap{width:100%;max-width:940px;display:flex;flex-direction:column;gap:14px;position:relative;z-index:1}
+
+/* HEADER */
+.header{
+  display:flex;align-items:center;justify-content:space-between;padding:20px 28px;
+  background:linear-gradient(135deg,var(--surface),var(--surface2));
+  border:1px solid var(--border2);border-radius:20px;position:relative;overflow:hidden;
+  animation:slideDown .5s cubic-bezier(.16,1,.3,1) both;
+  box-shadow:0 4px 40px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.07);
+}
+.header::before{content:'';position:absolute;top:-1px;left:20px;right:20px;height:1px;background:linear-gradient(90deg,transparent,var(--green),transparent)}
+.h-left{display:flex;align-items:center;gap:14px}
+.h-logo{
+  width:46px;height:46px;border-radius:14px;
+  background:linear-gradient(135deg,#00ff87,#00d4ff);
+  display:flex;align-items:center;justify-content:center;font-size:22px;
+  box-shadow:0 0 24px rgba(0,255,135,.4),0 4px 12px rgba(0,0,0,.3);
+  animation:logoPulse 3s ease-in-out infinite;
+}
+@keyframes logoPulse{0%,100%{box-shadow:0 0 24px rgba(0,255,135,.4),0 4px 12px rgba(0,0,0,.3)}50%{box-shadow:0 0 40px rgba(0,255,135,.6),0 4px 20px rgba(0,0,0,.3)}}
+.h-title-main{font-size:1.25rem;font-weight:700;letter-spacing:-.02em}
+.h-title-main em{font-style:normal;color:var(--green)}
+.h-title-sub{font-family:'JetBrains Mono',monospace;font-size:.63rem;color:var(--muted2);letter-spacing:.12em;text-transform:uppercase;margin-top:2px}
+.h-badge{
+  font-family:'JetBrains Mono',monospace;font-size:.68rem;font-weight:600;
+  padding:6px 14px;border-radius:30px;background:rgba(0,0,0,.4);
+  border:1px solid var(--border);color:var(--muted2);display:flex;align-items:center;gap:7px;transition:.4s;
+}
+.h-badge.live{color:var(--green);border-color:rgba(0,255,135,.3);background:var(--green-dim);box-shadow:0 0 16px rgba(0,255,135,.1)}
+.dot{width:7px;height:7px;border-radius:50%;background:currentColor;flex-shrink:0}
+.h-badge.live .dot{animation:blink 1.4s ease-in-out infinite}
+@keyframes blink{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.2;transform:scale(.7)}}
+
+/* TIMER */
+.timer-card{
+  background:var(--surface);border:1px solid var(--border);border-radius:18px;
+  padding:16px 24px;display:flex;align-items:center;gap:20px;
+  animation:slideDown .5s .06s cubic-bezier(.16,1,.3,1) both;
+  box-shadow:0 4px 24px rgba(0,0,0,.3);
+}
+.timer-info{display:flex;flex-direction:column;gap:2px;flex-shrink:0;min-width:60px}
+.timer-num{
+  font-family:'JetBrains Mono',monospace;font-size:2.2rem;font-weight:700;line-height:1;
+  color:var(--green);text-shadow:0 0 20px rgba(0,255,135,.5);transition:color .3s,text-shadow .3s;
+}
+.timer-num.urgent{color:var(--red);text-shadow:0 0 20px rgba(255,69,96,.5)}
+.timer-sub{font-size:.63rem;color:var(--muted2);letter-spacing:.06em;text-transform:uppercase;font-family:'JetBrains Mono',monospace}
+.bar-track{flex:1;height:8px;background:rgba(255,255,255,.05);border-radius:6px;overflow:hidden;border:1px solid var(--border)}
+.bar-fill{height:100%;border-radius:6px;background:linear-gradient(90deg,var(--green),var(--cyan));box-shadow:0 0 10px rgba(0,255,135,.4);transition:width 1s linear,background .4s}
+.bar-fill.urgent{background:linear-gradient(90deg,var(--red),#ff8c42);box-shadow:0 0 10px rgba(255,69,96,.4)}
+.timer-pct{font-family:'JetBrains Mono',monospace;font-size:.72rem;color:var(--muted2);flex-shrink:0;min-width:36px;text-align:right}
+
+/* TIME SYNC */
+.sync-card{
+  background:var(--surface);border:1px solid rgba(0,212,255,.15);border-radius:14px;
+  padding:14px 20px;display:flex;align-items:center;justify-content:space-between;gap:16px;
+  animation:slideDown .5s .09s cubic-bezier(.16,1,.3,1) both;
+}
+.sync-left{display:flex;align-items:center;gap:10px;flex:1}
+.sync-icon{font-size:1.2rem}
+.sync-text{font-family:'JetBrains Mono',monospace;font-size:.7rem;color:var(--muted2);line-height:1.5}
+.sync-text b{color:var(--cyan);display:block;font-size:.75rem}
+.sync-offset{
+  font-family:'JetBrains Mono',monospace;font-size:.72rem;font-weight:600;
+  padding:5px 12px;border-radius:8px;background:rgba(0,212,255,.08);
+  border:1px solid rgba(0,212,255,.2);color:var(--cyan);flex-shrink:0;
+}
+.sync-offset.bad{background:rgba(255,69,96,.08);border-color:rgba(255,69,96,.2);color:var(--red)}
+.sync-offset.good{background:rgba(0,255,135,.08);border-color:rgba(0,255,135,.2);color:var(--green)}
+.sync-btn{
+  font-family:'JetBrains Mono',monospace;font-size:.68rem;font-weight:600;
+  padding:6px 14px;border-radius:9px;border:1px solid rgba(0,212,255,.25);
+  background:rgba(0,212,255,.06);color:var(--cyan);cursor:pointer;transition:.2s;flex-shrink:0;
+}
+.sync-btn:hover{background:rgba(0,212,255,.15);border-color:rgba(0,212,255,.4)}
+
+/* INPUT */
+.input-card{
+  background:var(--surface);border:1px solid var(--border);border-radius:18px;
+  padding:22px 24px;display:flex;flex-direction:column;gap:12px;
+  animation:slideDown .5s .12s cubic-bezier(.16,1,.3,1) both;
+  box-shadow:0 4px 24px rgba(0,0,0,.3);
+}
+.card-label{
+  font-family:'JetBrains Mono',monospace;font-size:.65rem;font-weight:600;
+  color:var(--muted2);letter-spacing:.14em;text-transform:uppercase;
+  display:flex;align-items:center;gap:8px;
+}
+.card-label::before{content:'';width:3px;height:12px;background:var(--green);border-radius:2px;box-shadow:0 0 8px var(--green)}
+textarea{
+  font-family:'JetBrains Mono',monospace;font-size:.78rem;width:100%;height:130px;
+  background:rgba(0,0,0,.4);border:1px solid var(--border);border-radius:12px;
+  color:var(--text);padding:14px 16px;resize:vertical;outline:none;line-height:1.9;transition:.25s;
+}
+textarea::placeholder{color:var(--muted)}
+textarea:focus{border-color:rgba(0,255,135,.35);box-shadow:0 0 0 3px rgba(0,255,135,.06),0 0 20px rgba(0,255,135,.05);background:rgba(0,0,0,.6)}
+.hint-box{
+  font-family:'JetBrains Mono',monospace;font-size:.67rem;color:var(--muted2);
+  line-height:2;padding:12px 16px;background:rgba(0,255,135,.03);border-radius:10px;
+  border:1px solid rgba(0,255,135,.1);
+}
+.hint-box .hl{color:var(--green);font-weight:600}
+
+/* RESULTS */
+.results-card{
+  background:var(--surface);border:1px solid var(--border);border-radius:18px;overflow:hidden;
+  animation:slideDown .5s .18s cubic-bezier(.16,1,.3,1) both;box-shadow:0 4px 24px rgba(0,0,0,.3);
+}
+.results-head{
+  padding:16px 24px;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;background:var(--surface2);
+}
+.results-head-title{font-size:.82rem;font-weight:600;color:var(--muted2);display:flex;align-items:center;gap:8px}
+.results-head-title::before{content:'';width:3px;height:11px;background:var(--cyan);border-radius:2px;box-shadow:0 0 8px var(--cyan)}
+.r-count{font-family:'JetBrains Mono',monospace;font-size:.67rem;color:var(--muted);background:rgba(0,0,0,.4);padding:3px 12px;border-radius:20px;border:1px solid var(--border)}
+.results-body{min-height:80px}
+.empty-state{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:50px 24px;gap:12px;color:var(--muted);
+  font-family:'JetBrains Mono',monospace;font-size:.72rem;text-align:center;line-height:1.8;
+}
+.empty-icon{font-size:2.5rem;opacity:.25;animation:float 3s ease-in-out infinite}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+
+/* OTP ROW */
+.otp-row{
+  display:flex;align-items:center;gap:14px;padding:15px 24px;
+  border-bottom:1px solid var(--border);transition:background .2s;
+  animation:rowSlide .25s cubic-bezier(.16,1,.3,1) both;position:relative;overflow:hidden;
+}
+.otp-row::before{content:'';position:absolute;left:0;top:0;bottom:0;width:2px;background:linear-gradient(180deg,transparent,var(--green),transparent);opacity:0;transition:.3s}
+.otp-row:last-child{border-bottom:none}
+.otp-row:hover{background:rgba(255,255,255,.02)}
+.otp-row:hover::before{opacity:1}
+@keyframes rowSlide{from{opacity:0;transform:translateX(-10px)}to{opacity:1;transform:none}}
+
+.p-icon{width:38px;height:38px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;box-shadow:0 2px 8px rgba(0,0,0,.3)}
+.pi-ig{background:linear-gradient(135deg,#f58529,#dd2a7b,#8134af)}
+.pi-fb{background:#1877f2}
+.pi-wa{background:linear-gradient(135deg,#075e54,#128c7e)}
+.pi-th{background:#111;border:1px solid #333}
+.pi-def{background:var(--surface3);border:1px solid var(--border2)}
+
+.row-info{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.row-name{font-size:.85rem;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.row-sub{font-family:'JetBrains Mono',monospace;font-size:.6rem;color:var(--muted);letter-spacing:.04em}
+
+/* Code display - 3 digits · 3 digits */
+.code-wrap{display:flex;align-items:center;gap:6px;flex-shrink:0}
+.code-block{
+  font-family:'JetBrains Mono',monospace;font-weight:700;font-size:1.6rem;
+  color:var(--green);text-shadow:0 0 18px rgba(0,255,135,.5);
+  letter-spacing:.08em;transition:color .3s,text-shadow .3s;
+  background:rgba(0,255,135,.05);border:1px solid rgba(0,255,135,.12);
+  border-radius:8px;padding:4px 10px;
+}
+.code-block.urgent{color:var(--red);text-shadow:0 0 18px rgba(255,69,96,.5);background:rgba(255,69,96,.05);border-color:rgba(255,69,96,.12)}
+.code-dot{color:var(--muted);font-family:'JetBrains Mono',monospace;font-size:1rem}
+.code-invalid{font-family:'JetBrains Mono',monospace;font-size:.75rem;color:var(--red);font-weight:600;padding:4px 10px;background:rgba(255,69,96,.08);border:1px solid rgba(255,69,96,.2);border-radius:8px}
+
+.copy-btn{
+  font-family:'JetBrains Mono',monospace;font-size:.65rem;font-weight:600;
+  padding:7px 14px;border-radius:9px;border:1px solid var(--border2);
+  background:rgba(255,255,255,.04);color:var(--muted2);cursor:pointer;transition:.2s;flex-shrink:0;
+  display:flex;align-items:center;gap:5px;
+}
+.copy-btn svg{width:11px;height:11px}
+.copy-btn:hover{background:var(--green-dim);border-color:rgba(0,255,135,.35);color:var(--green);box-shadow:0 0 12px rgba(0,255,135,.1)}
+.copy-btn.ok{background:var(--green-dim);border-color:rgba(0,255,135,.4);color:var(--green)}
+
+/* FOOTER */
+.footer{display:grid;grid-template-columns:1fr 1fr;gap:12px;animation:slideDown .5s .24s cubic-bezier(.16,1,.3,1) both}
+.btn{
+  font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:.88rem;
+  padding:15px 20px;border-radius:14px;border:none;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;gap:9px;
+  transition:all .25s cubic-bezier(.16,1,.3,1);position:relative;overflow:hidden;
+}
+.btn::after{content:'';position:absolute;inset:0;background:white;opacity:0;transition:.15s}
+.btn:active::after{opacity:.06}
+.btn-reset{background:var(--red-dim);color:var(--red);border:1px solid rgba(255,69,96,.2)}
+.btn-reset:hover{background:var(--red);color:#fff;box-shadow:0 8px 32px rgba(255,69,96,.35);transform:translateY(-2px)}
+.btn-copy-all{background:linear-gradient(135deg,var(--green),var(--cyan));color:#050508;font-weight:800;box-shadow:0 4px 20px rgba(0,255,135,.25)}
+.btn-copy-all:hover{box-shadow:0 8px 40px rgba(0,255,135,.45),var(--green-glow);transform:translateY(-2px);filter:brightness(1.1)}
+.btn-copy-all.ok{background:var(--green-dim);color:var(--green);border:1px solid rgba(0,255,135,.3);box-shadow:none}
+
+.scan-line{position:fixed;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,rgba(0,255,135,.15),transparent);animation:scan 5s linear infinite;pointer-events:none;z-index:99}
+@keyframes scan{from{top:0}to{top:100vh}}
+@keyframes slideDown{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:none}}
+
+@media(max-width:600px){
+  .footer{grid-template-columns:1fr}
+  .code-block{font-size:1.25rem;padding:3px 8px}
+  .header{flex-direction:column;gap:12px;align-items:flex-start}
+  .sync-card{flex-direction:column;align-items:flex-start}
+}
+</style>
+</head>
+<body>
+<div class="scan-line"></div>
+<div class="wrap">
+
+  <div class="header">
+    <div class="h-left">
+      <div class="h-logo">🔐</div>
+      <div>
+        <div class="h-title-main">Bulk <em>TOTP</em> Generator</div>
+        <div class="h-title-sub">RFC 6238 · HMAC-SHA1 · 30s window</div>
+      </div>
+    </div>
+    <div class="h-badge" id="badge"><span class="dot"></span><span id="badgeText">Menunggu input...</span></div>
+  </div>
+
+  <div class="timer-card">
+    <div class="timer-info">
+      <div class="timer-num" id="timerNum">30</div>
+      <div class="timer-sub">detik tersisa</div>
+    </div>
+    <div class="bar-track"><div class="bar-fill" id="bar" style="width:100%"></div></div>
+    <div class="timer-pct" id="timerPct">100%</div>
+  </div>
+
+  <!-- TIME SYNC PANEL -->
+  <div class="sync-card">
+    <div class="sync-left">
+      <div class="sync-icon">🌐</div>
+      <div class="sync-text">
+        <b>Sinkronisasi Waktu</b>
+        Offset jam vs server: <span id="offsetVal">Mengecek...</span>
+      </div>
+    </div>
+    <div class="sync-offset" id="offsetBadge">...</div>
+    <button class="sync-btn" onclick="syncTime()">🔄 Sync</button>
+  </div>
+
+  <div class="input-card">
+    <div class="card-label">Input Secret Keys</div>
+    <textarea id="inp" placeholder="Masukkan secret TOTP satu per baris...
+
+Contoh:
+6QRQ 76O4 SSYQ TKSL QRMC LMJJ GGLY GZ7R
+Instagram: JBSWY3DPEHPK3PXP
+otpauth://totp/Facebook?secret=JBSWY3DPEHPK3PXP"></textarea>
+    <div class="hint-box">
+      <span class="hl">SECRET</span> — base32 (spasi otomatis dihapus) &nbsp;|&nbsp;
+      <span class="hl">Nama: SECRET</span> — dengan label &nbsp;|&nbsp;
+      <span class="hl">otpauth://totp/...</span> — URI lengkap
+    </div>
+  </div>
+
+  <div class="results-card">
+    <div class="results-head">
+      <div class="results-head-title">Hasil Kode OTP</div>
+      <div class="r-count" id="cnt">0 akun</div>
+    </div>
+    <div class="results-body" id="body">
+      <div class="empty-state">
+        <div class="empty-icon">🛡️</div>
+        Masukkan secret key di atas<br>untuk generate kode OTP
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <button class="btn btn-reset" onclick="resetAll()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+      Reset
+    </button>
+    <button class="btn btn-copy-all" id="copyAllBtn" onclick="copyAll()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+      Salin Semua Kode
+    </button>
+  </div>
+
+</div>
+<script>
+// === BASE32 DECODE ===
+function base32Decode(s) {
+  const alpha = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+  s = s.toUpperCase().replace(/[\s=\-]/g, '');
+  let bits = 0, val = 0, out = [];
+  for (let i = 0; i < s.length; i++) {
+    const idx = alpha.indexOf(s[i]);
+    if (idx < 0) throw new Error('Bad char: ' + s[i]);
+    val = (val << 5) | idx;
+    bits += 5;
+    if (bits >= 8) { out.push((val >>> (bits - 8)) & 0xff); bits -= 8; }
+  }
+  return new Uint8Array(out);
+}
+
+// === TOTP RFC 6238 dengan time offset ===
+let timeOffset = 0; // offset dalam milidetik vs server
+
+async function genTOTP(secret, digits, period, offsetMs) {
+  const key = base32Decode(secret);
+  const now = Date.now() + (offsetMs || 0);
+  const T = Math.floor(now / 1000 / period);
+  const buf = new ArrayBuffer(8);
+  const view = new DataView(buf);
+  view.setUint32(0, Math.floor(T / 0x100000000), false);
+  view.setUint32(4, T >>> 0, false);
+  const ck = await crypto.subtle.importKey('raw', key, {name:'HMAC',hash:'SHA-1'}, false, ['sign']);
+  const mac = new Uint8Array(await crypto.subtle.sign('HMAC', ck, buf));
+  const off = mac[19] & 0x0f;
+  const num = ((mac[off]&0x7f)<<24)|((mac[off+1]&0xff)<<16)|((mac[off+2]&0xff)<<8)|(mac[off+3]&0xff);
+  return String(num % Math.pow(10, digits)).padStart(digits, '0');
+}
+
+// === TIME SYNC via NTP-over-HTTP ===
+async function syncTime() {
+  const badge = document.getElementById('offsetBadge');
+  const val = document.getElementById('offsetVal');
+  badge.textContent = 'Syncing...';
+  badge.className = 'sync-offset';
+
+  try {
+    // Ukur round-trip ke server untuk estimasi offset
+    const samples = [];
+    for (let i = 0; i < 3; i++) {
+      const t0 = Date.now();
+      const r = await fetch('https://worldtimeapi.org/api/timezone/UTC', {cache:'no-store'});
+      const t1 = Date.now();
+      const data = await r.json();
+      const serverMs = new Date(data.datetime).getTime();
+      const rtt = t1 - t0;
+      const estimated = serverMs + rtt / 2;
+      samples.push(estimated - t1);
+    }
+    // Median
+    samples.sort((a,b)=>a-b);
+    timeOffset = samples[1];
+    const s = Math.round(timeOffset / 1000);
+    val.textContent = (s >= 0 ? '+' : '') + s + 's dari server';
+    badge.textContent = (s >= 0 ? '+' : '') + s + 's';
+    badge.className = 'sync-offset ' + (Math.abs(s) <= 2 ? 'good' : 'bad');
+    await generate();
+  } catch {
+    // Fallback: estimasi via Date header
+    try {
+      const t0 = Date.now();
+      const r = await fetch('https://www.google.com/generate_204', {cache:'no-store', mode:'no-cors'});
+      const t1 = Date.now();
+      // Tidak bisa baca header karena no-cors, pakai 0 offset
+      timeOffset = 0;
+      val.textContent = 'Tidak bisa sync (offset: 0s)';
+      badge.textContent = '±0s';
+      badge.className = 'sync-offset good';
+    } catch {
+      val.textContent = 'Sync gagal';
+      badge.textContent = 'Error';
+    }
+  }
+}
+
+// Auto sync saat load
+window.addEventListener('load', () => {
+  syncTime();
+});
+
+// === PARSE LINE ===
+function parseLine(line) {
+  line = line.trim();
+  if (!line) return null;
+  if (/^otpauth:\/\//i.test(line)) {
+    try {
+      const u = new URL(line);
+      const secret = u.searchParams.get('secret') || '';
+      const issuer = u.searchParams.get('issuer') || '';
+      let label = decodeURIComponent(u.pathname.replace(/^\/totp\//, ''));
+      if (label.includes(':')) label = label.split(':').slice(1).join(':').trim();
+      const digits = parseInt(u.searchParams.get('digits') || '6');
+      const period = parseInt(u.searchParams.get('period') || '30');
+      return { name: issuer || label || 'Unknown', secret, digits, period };
+    } catch { return { name:'URI Error', secret:'', digits:6, period:30 }; }
+  }
+  const ci = line.indexOf(':');
+  if (ci > 0) {
+    return { name: line.slice(0,ci).trim(), secret: line.slice(ci+1).trim(), digits:6, period:30 };
+  }
+  return { name:null, secret:line, digits:6, period:30 };
+}
+
+function platIcon(name) {
+  if (!name) return { icon:'🔑', cls:'pi-def' };
+  const n = name.toLowerCase();
+  if (n.includes('instagram')||n==='ig') return { icon:'📸', cls:'pi-ig' };
+  if (n.includes('facebook') ||n==='fb') return { icon:'📘', cls:'pi-fb' };
+  if (n.includes('whatsapp') ||n==='wa') return { icon:'💬', cls:'pi-wa' };
+  if (n.includes('threads'))              return { icon:'🧵', cls:'pi-th' };
+  return { icon:'🔑', cls:'pi-def' };
+}
+
+function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') }
+
+let lastResults = [];
+
+async function generate() {
+  const raw = document.getElementById('inp').value;
+  const bodyEl = document.getElementById('body');
+  const badge = document.getElementById('badge');
+  const badgeText = document.getElementById('badgeText');
+  const cnt = document.getElementById('cnt');
+
+  const lines = raw.split('\n').filter(l => l.trim());
+  if (!lines.length) {
+    bodyEl.innerHTML = '<div class="empty-state"><div class="empty-icon">🛡️</div>Masukkan secret key di atas<br>untuk generate kode OTP</div>';
+    badge.className='h-badge'; badgeText.textContent='Menunggu input...';
+    cnt.textContent='0 akun'; lastResults=[]; return;
+  }
+
+  badge.className='h-badge live'; badgeText.textContent='Generating...';
+  const parsed = lines.map(parseLine).filter(Boolean);
+  const isUrgent = secLeft() <= 5;
+
+  const results = await Promise.all(parsed.map(async (p, i) => {
+    let code = null;
+    try { code = await genTOTP(p.secret, p.digits, p.period, timeOffset); } catch(e) { console.error(e); }
+    return { name: p.name || ('Secret ' + (i+1)), code };
+  }));
+
+  lastResults = results;
+  bodyEl.innerHTML = '';
+
+  results.forEach((r, i) => {
+    const { icon, cls } = platIcon(r.name);
+    const invalid = !r.code;
+    const row = document.createElement('div');
+    row.className = 'otp-row';
+    row.style.animationDelay = (i * 30) + 'ms';
+
+    let codeHtml = '';
+    if (invalid) {
+      codeHtml = '<div class="code-invalid">⚠ SECRET TIDAK VALID</div>';
+    } else {
+      const c = r.code;
+      codeHtml = '<div class="code-wrap">' +
+        '<span class="code-block' + (isUrgent?' urgent':'') + '">' + c.slice(0,3) + '</span>' +
+        '<span class="code-dot">·</span>' +
+        '<span class="code-block' + (isUrgent?' urgent':'') + '">' + c.slice(3) + '</span>' +
+        '</div>';
+    }
+
+    row.innerHTML =
+      '<div class="p-icon ' + cls + '">' + icon + '</div>' +
+      '<div class="row-info">' +
+        '<div class="row-name">' + esc(r.name) + '</div>' +
+        '<div class="row-sub">TOTP · SHA-1 · 30s</div>' +
+      '</div>' +
+      codeHtml +
+      (!invalid ? '<button class="copy-btn" data-code="' + r.code + '" onclick="copyCode(this)">' +
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>' +
+        'Salin</button>' : '');
+    bodyEl.appendChild(row);
+  });
+
+  const valid = results.filter(r => r.code).length;
+  badgeText.textContent = valid + ' kode aktif';
+  cnt.textContent = results.length + ' akun';
+}
+
+// === TIMER ===
+function secLeft(){ return 30 - (Math.floor((Date.now() + timeOffset) / 1000) % 30) }
+let prevSec = -1;
+
+function tick() {
+  const s = secLeft();
+  const pct = Math.round((s / 30) * 100);
+  document.getElementById('timerNum').textContent = s;
+  document.getElementById('timerPct').textContent = pct + '%';
+  document.getElementById('bar').style.width = pct + '%';
+
+  const urgent = s <= 5;
+  document.getElementById('bar').className = 'bar-fill' + (urgent ? ' urgent' : '');
+  document.getElementById('timerNum').className = 'timer-num' + (urgent ? ' urgent' : '');
+  document.querySelectorAll('.code-block').forEach(el => {
+    if (urgent) el.classList.add('urgent'); else el.classList.remove('urgent');
+  });
+
+  if (s === 30 && prevSec !== 30) generate();
+  prevSec = s;
+}
+setInterval(tick, 500);
+tick();
+
+// === INPUT ===
+let dbt;
+document.getElementById('inp').addEventListener('input', () => {
+  clearTimeout(dbt); dbt = setTimeout(generate, 380);
+});
+
+// === COPY SINGLE — hanya kode ===
+function copyCode(btn) {
+  const code = btn.dataset.code;
+  navigator.clipboard.writeText(code).then(() => {
+    const orig = btn.innerHTML;
+    btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>OK';
+    btn.classList.add('ok');
+    setTimeout(() => { btn.innerHTML = orig; btn.classList.remove('ok'); }, 1800);
+  });
+}
+
+// === COPY ALL — hanya kode saja, tanpa nama/secret ===
+function copyAll() {
+  const valid = lastResults.filter(r => r.code);
+  if (!valid.length) return;
+  const txt = valid.map(r => r.code).join('\n');
+  navigator.clipboard.writeText(txt).then(() => {
+    const btn = document.getElementById('copyAllBtn');
+    const orig = btn.innerHTML;
+    btn.innerHTML = '✓ Semua Kode Tersalin!';
+    btn.classList.add('ok');
+    setTimeout(() => { btn.innerHTML = orig; btn.classList.remove('ok'); }, 2000);
+  });
+}
+
+function resetAll() {
+  document.getElementById('inp').value = '';
+  generate();
+}
+</script>
+</body>
+</html>
